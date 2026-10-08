@@ -48,3 +48,12 @@ def test_csv_settings_parse() -> None:
     s = Settings(_env_file=None, api_keys="a, b", auto_send_categories="pricing,availability")
     assert s.api_keys == ["a", "b"]
     assert [c.value for c in s.auto_send_categories] == ["pricing", "availability"]
+
+
+def test_csv_env_vars_parse(monkeypatch) -> None:
+    """API_KEYS and AUTO_SEND_CATEGORIES are plain CSV in the environment, not JSON."""
+    monkeypatch.setenv("API_KEYS", "k1, k2")
+    monkeypatch.setenv("AUTO_SEND_CATEGORIES", "pricing,availability")
+    s = Settings(_env_file=None)
+    assert s.api_keys == ["k1", "k2"]
+    assert s.auto_send_categories == ["pricing", "availability"]

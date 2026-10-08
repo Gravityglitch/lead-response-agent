@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from agent.models import Category
 
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     metrics_enabled: bool = False
 
     # --- auth --------------------------------------------------------------
-    api_keys: list[str] = Field(
+    api_keys: Annotated[list[str], NoDecode] = Field(
         default_factory=list,
         description="Comma-separated X-API-Key values accepted on every endpoint except "
         "/health, /ready, /metrics and the signed webhook routes.",
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     twilio_from_number: str | None = None
     sendgrid_api_key: str | None = None
     sendgrid_from_email: str | None = None
-    auto_send_categories: list[Category] = Field(
+    auto_send_categories: Annotated[list[Category], NoDecode] = Field(
         default_factory=list,
         description="Categories whose send_reply action is executed without approval. "
         "Escalated threads are never auto-sent.",
