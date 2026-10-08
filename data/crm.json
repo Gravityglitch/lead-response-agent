@@ -1,0 +1,83 @@
+{
+  "properties": [
+    {
+      "id": "P-101",
+      "name": "Maple Court 2B",
+      "address": "120 Maple Ct, Unit 2B, Springfield",
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "rent": 1650,
+      "deposit": 1650,
+      "available_from": "2026-11-01",
+      "pets": "cats only",
+      "parking": "1 assigned spot",
+      "status": "available"
+    },
+    {
+      "id": "P-102",
+      "name": "Riverside Lofts 5",
+      "address": "48 River Rd, Loft 5, Springfield",
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "rent": 1350,
+      "deposit": 1350,
+      "available_from": "2026-10-15",
+      "pets": "no pets",
+      "parking": "street parking",
+      "status": "available"
+    },
+    {
+      "id": "P-103",
+      "name": "Oak Street House",
+      "address": "9 Oak St, Springfield",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "rent": 2400,
+      "deposit": 2400,
+      "available_from": "2026-12-01",
+      "pets": "dogs and cats, $50/mo pet rent",
+      "parking": "2-car garage",
+      "status": "available"
+    },
+    {
+      "id": "P-104",
+      "name": "Elm Plaza 12C",
+      "address": "300 Elm Plaza, Unit 12C, Springfield",
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "rent": 1900,
+      "deposit": 1900,
+      "available_from": "2026-10-10",
+      "pets": "no pets",
+      "parking": "garage, $75/mo",
+      "status": "pending_application"
+    },
+    {
+      "id": "P-105",
+      "name": "Cedar Studio 3",
+      "address": "77 Cedar Ave, Studio 3, Springfield",
+      "bedrooms": 0,
+      "bathrooms": 1,
+      "rent": 975,
+      "deposit": 975,
+      "available_from": "2026-10-20",
+      "pets": "cats only",
+      "parking": "none",
+      "status": "available"
+    },
+    {
+      "id": "P-106",
+      "name": "Birch Townhome 4",
+      "address": "15 Birch Ln, Unit 4, Springfield",
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "rent": 2650,
+      "deposit": 2650,
+      "available_from": "2026-09-01",
+      "pets": "dogs and cats",
+      "parking": "attached garage",
+      "status": "leased"
+    }
+  ],
+  "leads": []
+}

@@ -1,0 +1,20 @@
+{"id": 1, "label": "availability", "inquiry": {"channel": "web_form", "from": "dana@example.com", "body": "Hi, is the 2 bedroom at Maple Court still available? Looking to move in November 1st."}}
+{"id": 2, "label": "availability", "inquiry": {"channel": "sms", "from": "+15550100001", "body": "Is Riverside Lofts 5 still listed? When can I move in"}}
+{"id": 3, "label": "availability", "inquiry": {"channel": "email", "from": "sam@example.com", "subject": "Oak Street House", "body": "Do you have any openings at Oak Street House for December? We need 3 bedrooms."}}
+{"id": 4, "label": "availability", "inquiry": {"channel": "web_form", "from": "lee@example.com", "body": "Saw Cedar Studio 3 on Zillow. Is it taken yet or still vacant?"}}
+{"id": 5, "label": "pricing", "inquiry": {"channel": "email", "from": "priya@example.com", "subject": "Elm Plaza 12C", "body": "What's the monthly rent and deposit for Elm Plaza 12C? Are utilities included?"}}
+{"id": 6, "label": "pricing", "inquiry": {"channel": "sms", "from": "+15550100002", "body": "how much is the pet rent at Oak Street House and is there an application fee"}}
+{"id": 7, "label": "pricing", "inquiry": {"channel": "web_form", "from": "marco@example.com", "body": "Riverside Lofts - is parking extra or included in the $1350?"}}
+{"id": 8, "label": "pricing", "inquiry": {"channel": "email", "from": "ali@example.com", "subject": "Maple Court 2B", "body": "Could you confirm the price per month and what the security deposit is for Maple Court 2B?"}}
+{"id": 9, "label": "showing_request", "inquiry": {"channel": "sms", "from": "+15550100003", "body": "Can I tour Maple Court 2B this weekend? Saturday morning works best."}}
+{"id": 10, "label": "showing_request", "inquiry": {"channel": "web_form", "from": "jo@example.com", "body": "I'd like to schedule a showing of the Oak Street House. I'm free weekday afternoons."}}
+{"id": 11, "label": "showing_request", "inquiry": {"channel": "email", "from": "kim@example.com", "subject": "Visit", "body": "We're in town Friday and would love to see the unit at Cedar Studio 3 in person. Any appointment slots?"}}
+{"id": 12, "label": "showing_request", "inquiry": {"channel": "sms", "from": "+15550100004", "body": "Hey can me and my roommate stop by Riverside Lofts tomorrow to look at the loft?"}}
+{"id": 13, "label": "maintenance", "inquiry": {"channel": "sms", "from": "+15550100005", "body": "The kitchen sink at Birch Townhome 4 is leaking under the cabinet, please send someone"}}
+{"id": 14, "label": "maintenance", "inquiry": {"channel": "email", "from": "tenant12c@example.com", "subject": "No heat", "body": "Our furnace at Elm Plaza 12C stopped working last night and it's freezing. Need this fixed asap."}}
+{"id": 15, "label": "maintenance", "inquiry": {"channel": "web_form", "from": "renter@example.com", "body": "I'm locked out of Maple Court 2B, the key broke in the lock. Who do I call?"}}
+{"id": 16, "label": "maintenance", "inquiry": {"channel": "sms", "from": "+15550100006", "body": "smoke detector in the hallway keeps chirping, think it needs a new battery or a repair"}}
+{"id": 17, "label": "other", "inquiry": {"channel": "email", "from": "sales@vendorco.example", "subject": "Partnership opportunity", "body": "We provide SEO services for property managers. Can we book 15 minutes with your marketing lead?"}}
+{"id": 18, "label": "other", "inquiry": {"channel": "web_form", "from": "anon@example.com", "body": "I was denied for Elm Plaza and I believe it was discrimination. I want to speak to a manager about my fair housing rights."}}
+{"id": 19, "label": "other", "inquiry": {"channel": "sms", "from": "+15550100007", "body": "wrong number sorry"}}
+{"id": 20, "label": "other", "inquiry": {"channel": "email", "from": "neighbor@example.com", "subject": "Noise complaint", "body": "The tenants at Birch Townhome 4 had a loud party until 3am again. This is the third time this month."}}
