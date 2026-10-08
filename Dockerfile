@@ -27,8 +27,11 @@ RUN groupadd --gid 1000 app \
 WORKDIR /app
 
 COPY --from=builder --chown=app:app /app /app
+RUN mkdir -p /app/var && chown app:app /app/var
+VOLUME ["/app/var"]
 
-ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
+ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 \
+    DATABASE_URL="sqlite:////app/var/lead_agent.db"
 
 USER app
 

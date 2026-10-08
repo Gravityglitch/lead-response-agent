@@ -79,6 +79,16 @@ curl -s localhost:8000/ready # {"status":"ready","db":true}
 `APP_ENV=production` refuses to start without `API_KEYS`, a Postgres `DATABASE_URL`, and the
 provider credentials for any enabled webhook / live outbound mode. Fix the printed list and restart.
 
+### Single container (no Postgres)
+
+```bash
+docker build -t lead-response-agent .
+docker run -p 8000:8000 -e API_KEYS=dev -e ANTHROPIC_API_KEY=... -v lead-data:/app/var lead-response-agent
+```
+
+The image defaults `DATABASE_URL` to SQLite under `/app/var` (a declared volume) so the non-root
+user can write it; override with a Postgres URL for anything beyond a single replica.
+
 ### Local
 
 ```bash
