@@ -12,18 +12,24 @@
       "name": "Inbound Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "webhookId": "lead-inbound"
     },
     {
       "parameters": {
-        "jsCode": "// Normalise Twilio / SendGrid-parse / web-form payloads into {channel, from, body}\nconst b = $input.first().json.body ?? $input.first().json;\nif (b.From && b.Body) {\n  return [{ json: { channel: 'sms', from: b.From, body: b.Body } }];\n}\nif (b.from && b.text) {\n  return [{ json: { channel: 'email', from: b.from, subject: b.subject ?? null, body: b.text } }];\n}\nreturn [{ json: { channel: b.channel ?? 'web_form', from: b.from ?? b.email, subject: b.subject ?? null, body: b.body ?? b.message } }];"
+        "jsCode": "// Normalise Twilio / SendGrid-parse / web-form payloads into {channel, from, body}\nconst b = $input.first().json.body ?? $input.first().json;\nif (b.From && b.Body) {\n  return [{ json: { channel: 'sms', from: b.From, body: b.Body, provider_message_id: b.MessageSid ?? null } }];\n}\nif (b.from && b.text) {\n  return [{ json: { channel: 'email', from: b.from, subject: b.subject ?? null, body: b.text } }];\n}\nreturn [{ json: { channel: b.channel ?? 'web_form', from: b.from ?? b.email, subject: b.subject ?? null, body: b.body ?? b.message } }];"
       },
       "id": "a1f0c2b4-0002-4c1e-9e3a-000000000002",
       "name": "Normalise Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -32,24 +38,47 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {}
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.LEAD_AGENT_API_KEY }}"
+            },
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.provider_message_id || $execution.id }}"
+            }
+          ]
+        }
       },
       "id": "a1f0c2b4-0003-4c1e-9e3a-000000000003",
       "name": "Call Lead Agent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "c1",
               "leftValue": "={{ $json.escalated }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "true" }
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
             }
           ],
           "combinator": "and"
@@ -60,12 +89,19 @@
       "name": "IF Escalated",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
         "select": "channel",
-        "channelId": { "__rl": true, "mode": "name", "value": "#leasing-escalations" },
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#leasing-escalations"
+        },
         "text": "=:rotating_light: *Escalated {{ $json.classification.category }}* from {{ $json.inquiry.from }} ({{ $json.inquiry.channel }})\n> {{ $json.inquiry.body }}\n*Reason:* {{ $json.draft.escalation_reason }}",
         "otherOptions": {}
       },
@@ -73,13 +109,25 @@
       "name": "Slack: Escalation",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
-      "position": [1140, 180],
-      "credentials": { "slackApi": { "id": "REPLACE_ME", "name": "Slack account" } }
+      "position": [
+        1140,
+        180
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_ME",
+          "name": "Slack account"
+        }
+      }
     },
     {
       "parameters": {
         "select": "channel",
-        "channelId": { "__rl": true, "mode": "name", "value": "#leasing-approvals" },
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#leasing-approvals"
+        },
         "text": "=:memo: *Draft ready for {{ $json.inquiry.from }}* ({{ $json.classification.category }}, conf {{ $json.classification.confidence }})\n```{{ $json.draft.reply_text }}```\nPending actions: {{ $json.actions.filter(a => a.requires_approval).map(a => a.type + ' ' + a.id).join(', ') }}\nApprove: `POST {{ $env.LEAD_AGENT_URL }}/approve/<id>`",
         "otherOptions": {}
       },
@@ -87,8 +135,16 @@
       "name": "Slack: Approval Request",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
-      "position": [1140, 420],
-      "credentials": { "slackApi": { "id": "REPLACE_ME", "name": "Slack account" } }
+      "position": [
+        1140,
+        420
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_ME",
+          "name": "Slack account"
+        }
+      }
     },
     {
       "parameters": {
@@ -102,25 +158,93 @@
       "name": "Email: On-call",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [1380, 180],
-      "credentials": { "smtp": { "id": "REPLACE_ME", "name": "SMTP account" } }
+      "position": [
+        1380,
+        180
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_ME",
+          "name": "SMTP account"
+        }
+      }
     }
   ],
   "connections": {
-    "Inbound Webhook": { "main": [[{ "node": "Normalise Payload", "type": "main", "index": 0 }]] },
-    "Normalise Payload": { "main": [[{ "node": "Call Lead Agent", "type": "main", "index": 0 }]] },
-    "Call Lead Agent": { "main": [[{ "node": "IF Escalated", "type": "main", "index": 0 }]] },
-    "IF Escalated": {
+    "Inbound Webhook": {
       "main": [
-        [{ "node": "Slack: Escalation", "type": "main", "index": 0 }],
-        [{ "node": "Slack: Approval Request", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Normalise Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Slack: Escalation": { "main": [[{ "node": "Email: On-call", "type": "main", "index": 0 }]] }
+    "Normalise Payload": {
+      "main": [
+        [
+          {
+            "node": "Call Lead Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Lead Agent": {
+      "main": [
+        [
+          {
+            "node": "IF Escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Escalated": {
+      "main": [
+        [
+          {
+            "node": "Slack: Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Escalation": {
+      "main": [
+        [
+          {
+            "node": "Email: On-call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "active": false,
   "versionId": "1",
-  "meta": { "instanceId": "demo" },
-  "tags": [{ "name": "lead-response-agent" }]
+  "meta": {
+    "instanceId": "demo"
+  },
+  "tags": [
+    {
+      "name": "lead-response-agent"
+    }
+  ]
 }

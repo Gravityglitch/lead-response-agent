@@ -27,6 +27,10 @@ class Inquiry(BaseModel):
     sender: str = Field(alias="from", description="Email address or phone number")
     body: str = Field(min_length=1)
     subject: str | None = None
+    provider_message_id: str | None = Field(
+        default=None,
+        description="Upstream message id (Twilio MessageSid, email Message-ID). Used to dedupe.",
+    )
     received_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     model_config = {"populate_by_name": True}
@@ -60,6 +64,7 @@ class ActionType(StrEnum):
     BOOK_SHOWING = "book_showing"
     UPDATE_LEAD = "update_lead"
     ESCALATE = "escalate"
+    SEND_REPLY = "send_reply"
 
 
 class Action(BaseModel):
@@ -69,15 +74,20 @@ class Action(BaseModel):
     type: ActionType
     payload: dict[str, str | int | float | bool | None]
     requires_approval: bool
-    status: Literal["pending", "approved", "rejected", "executed"] = "pending"
+    status: Literal["pending", "approved", "rejected", "executed", "failed"] = "pending"
+    inquiry_id: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class AgentResult(BaseModel):
     """What POST /inbound returns."""
 
+    inquiry_id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     inquiry: Inquiry
     classification: Classification
     draft: DraftReply
     actions: list[Action]
     escalated: bool
+    duplicate: bool = Field(
+        default=False, description="True when this inquiry was already processed (replayed result)"
+    )

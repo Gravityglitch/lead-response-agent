@@ -12,12 +12,13 @@ def test_showing_request_proposes_slot_but_does_not_book(agent: LeadAgent) -> No
     assert result.draft.proposed_slot_id == "S-1"
     assert "propose_showing_slot" in result.draft.tools_used
     types = {a.type for a in result.actions}
-    assert types == {ActionType.UPDATE_LEAD, ActionType.BOOK_SHOWING}
+    assert types == {ActionType.UPDATE_LEAD, ActionType.BOOK_SHOWING, ActionType.SEND_REPLY}
     assert all(a.requires_approval for a in result.actions)
-    # nothing written yet
+    # nothing written or sent yet
     assert agent.toolbox.crm["leads"] == []
     assert agent.toolbox.calendar["slots"][0]["booked"] is False
-    assert len(agent.queue.list_pending()) == 2
+    assert agent.queue.sender.sent == []
+    assert len(agent.queue.list_pending()) == 3
 
 
 def test_pricing_answers_from_crm_only(agent: LeadAgent) -> None:
@@ -50,9 +51,11 @@ def test_approve_executes_write_and_reject_does_not(agent: LeadAgent) -> None:
     agent.queue.approve(book.id)
     slot = next(s for s in agent.toolbox.calendar["slots"] if s["id"] == book.payload["slot_id"])
     assert slot["booked"] is True
+    reply = next(a for a in result.actions if a.type == ActionType.SEND_REPLY)
+    agent.queue.reject(reply.id)
     assert agent.queue.list_pending() == []
     events = [e["event"] for e in agent.queue.audit_log]
-    assert events.count("executed") == 1 and "rejected" in events
+    assert events.count("executed") == 1 and events.count("rejected") == 2
 
 
 def test_unknown_property_asks_for_clarification(agent: LeadAgent) -> None:

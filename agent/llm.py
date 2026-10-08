@@ -8,14 +8,21 @@ Both expose the same two calls:
 from __future__ import annotations
 
 import json
-import logging
-import os
 from typing import Any, Protocol
 
+import structlog
+from tenacity import (
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential_jitter,
+)
+
+from agent.config import Settings
 from agent.models import Category, Classification, DraftReply, Inquiry
 from agent.tools import TOOL_SCHEMAS, ToolBox
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 DEFAULT_MODEL = "claude-sonnet-5-5"
 MAX_TOOL_ROUNDS = 6
@@ -59,16 +66,67 @@ def _inquiry_text(inquiry: Inquiry) -> str:
 # --------------------------------------------------------------------------
 
 
+class LLMError(RuntimeError):
+    """Raised when the model backend fails after retries or returns unusable output."""
+
+
+def _is_retryable(exc: BaseException) -> bool:
+    import anthropic
+
+    if isinstance(exc, anthropic.APIConnectionError | anthropic.APITimeoutError):
+        return True
+    if isinstance(exc, anthropic.RateLimitError):
+        return True
+    if isinstance(exc, anthropic.APIStatusError):
+        return exc.status_code >= 500
+    return False
+
+
 class ClaudeLLM:
-    def __init__(self, model: str | None = None, client: Any | None = None) -> None:
+    def __init__(
+        self,
+        model: str | None = None,
+        client: Any | None = None,
+        timeout: float = 60.0,
+        max_retries: int = 3,
+        price_input_per_mtok: float = 2.0,
+        price_output_per_mtok: float = 10.0,
+    ) -> None:
         import anthropic
 
-        self.model = model or os.environ.get("LEAD_AGENT_MODEL", DEFAULT_MODEL)
-        self.client = client or anthropic.Anthropic()
+        self.model = model or DEFAULT_MODEL
+        # The SDK's own retries are disabled so tenacity owns backoff and the retry count.
+        self.client = client or anthropic.Anthropic(timeout=timeout, max_retries=0)
+        self.price_in = price_input_per_mtok
+        self.price_out = price_output_per_mtok
+        self._parse = retry(
+            retry=retry_if_exception(_is_retryable),
+            stop=stop_after_attempt(max(1, max_retries)),
+            wait=wait_exponential_jitter(initial=1, max=20),
+            reraise=True,
+        )(self._parse_once)
+
+    def _parse_once(self, step: str, **kwargs: Any) -> Any:
+        response = self.client.messages.parse(model=self.model, **kwargs)
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            tokens_in = int(getattr(usage, "input_tokens", 0) or 0)
+            tokens_out = int(getattr(usage, "output_tokens", 0) or 0)
+            cost = (tokens_in * self.price_in + tokens_out * self.price_out) / 1_000_000
+            log.info(
+                "llm.usage",
+                step=step,
+                model=self.model,
+                input_tokens=tokens_in,
+                output_tokens=tokens_out,
+                cost_usd=round(cost, 6),
+                stop_reason=getattr(response, "stop_reason", None),
+            )
+        return response
 
     def classify(self, inquiry: Inquiry) -> Classification:
-        response = self.client.messages.parse(
-            model=self.model,
+        response = self._parse(
+            "classify",
             max_tokens=1024,
             system=CLASSIFY_SYSTEM,
             messages=[{"role": "user", "content": _inquiry_text(inquiry)}],
@@ -76,7 +134,7 @@ class ClaudeLLM:
         )
         parsed = response.parsed_output
         if parsed is None:
-            raise RuntimeError(f"classification not parsed (stop_reason={response.stop_reason})")
+            raise LLMError(f"classification not parsed (stop_reason={response.stop_reason})")
         return parsed
 
     def draft(
@@ -94,8 +152,8 @@ class ClaudeLLM:
         ]
         tools_used: list[str] = []
         for _ in range(MAX_TOOL_ROUNDS):
-            response = self.client.messages.parse(
-                model=self.model,
+            response = self._parse(
+                "draft",
                 max_tokens=4096,
                 system=DRAFT_SYSTEM,
                 tools=TOOL_SCHEMAS,
@@ -105,7 +163,7 @@ class ClaudeLLM:
             if response.stop_reason != "tool_use":
                 parsed = response.parsed_output
                 if parsed is None:
-                    raise RuntimeError(f"draft not parsed (stop_reason={response.stop_reason})")
+                    raise LLMError(f"draft not parsed (stop_reason={response.stop_reason})")
                 parsed.tools_used = sorted(set(tools_used))
                 return parsed
 
@@ -130,7 +188,7 @@ class ClaudeLLM:
                         }
                     )
             messages.append({"role": "user", "content": results})
-        raise RuntimeError("tool loop exceeded MAX_TOOL_ROUNDS")
+        raise LLMError("tool loop exceeded MAX_TOOL_ROUNDS")
 
 
 # --------------------------------------------------------------------------
@@ -308,13 +366,19 @@ class FakeLLM:
         raise AssertionError("unreachable")  # pragma: no cover
 
 
-def build_llm(toolbox: ToolBox) -> LLM:
-    """Pick a backend from env. Falls back to the fake when no API key is configured."""
+def build_llm(toolbox: ToolBox, settings: Settings | None = None) -> LLM:
+    """Pick a backend from settings. Falls back to the fake when no API key is configured."""
+    settings = settings or Settings()
     names = [p["name"] for p in toolbox.crm["properties"]]
-    choice = os.environ.get("LEAD_AGENT_LLM", "claude").lower()
-    if choice == "fake":
+    if settings.lead_agent_llm == "fake":
         return FakeLLM(names)
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        log.warning("ANTHROPIC_API_KEY not set; using FakeLLM")
+    if not settings.anthropic_api_key:
+        log.warning("llm.fallback", reason="ANTHROPIC_API_KEY not set; using FakeLLM")
         return FakeLLM(names)
-    return ClaudeLLM()
+    return ClaudeLLM(
+        model=settings.lead_agent_model,
+        timeout=settings.llm_timeout_seconds,
+        max_retries=settings.llm_max_retries,
+        price_input_per_mtok=settings.llm_price_input_per_mtok,
+        price_output_per_mtok=settings.llm_price_output_per_mtok,
+    )

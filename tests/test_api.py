@@ -17,7 +17,7 @@ def test_inbound_pending_approve_flow(client: TestClient) -> None:
     assert body["escalated"] is False
 
     pending = client.get("/pending").json()
-    assert {a["type"] for a in pending} == {"update_lead", "book_showing"}
+    assert {a["type"] for a in pending} == {"update_lead", "book_showing", "send_reply"}
 
     book = next(a for a in pending if a["type"] == "book_showing")
     r = client.post(f"/approve/{book['id']}")
@@ -26,6 +26,10 @@ def test_inbound_pending_approve_flow(client: TestClient) -> None:
     lead = next(a for a in pending if a["type"] == "update_lead")
     r = client.post(f"/reject/{lead['id']}")
     assert r.status_code == 200 and r.json()["status"] == "rejected"
+
+    reply = next(a for a in pending if a["type"] == "send_reply")
+    r = client.post(f"/approve/{reply['id']}")
+    assert r.status_code == 200 and r.json()["status"] == "executed"
 
     assert client.get("/pending").json() == []
     assert client.post(f"/approve/{book['id']}").status_code == 404
